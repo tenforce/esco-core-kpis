@@ -1,0 +1,30 @@
+#Get all Concepts from Taxonomy
+PREFIX mp:<http://sem.tenforce.com/vocabularies/mapping-platform/>
+PREFIX mu:<http://mu.semte.ch/vocabularies/core/>
+SELECT ?label COUNT(DISTINCT (?concept)) AS ?total
+WHERE
+{
+	?concept skos:inScheme ?taxUri .
+	?concept mp:isMappable 'true' .
+	?taxUri mu:uuid $taxonomyUuid.
+	?taxUri skos:prefLabel ?label
+}
+
+#Get all Unmapped Concepts from Taxonomy
+PREFIX mp:<http://sem.tenforce.com/vocabularies/mapping-platform/>
+PREFIX mu:<http://mu.semte.ch/vocabularies/core/>
+SELECT  ?label COUNT(DISTINCT (?concept)) AS ?total
+WHERE
+{
+	?concept skos:inScheme ?taxUri .
+	?concept mp:isMappable 'true' .
+	?taxUri mu:uuid $taxUUID .
+	?taxUri skos:prefLabel ?label
+	FILTER NOT EXISTS{
+		?mapping a mp:Mapping .
+		?mapping $FROM ?concept .
+		?mapping mp:status ?status .
+		FILTER(?status NOT IN ('suggested', 'rejected'))
+	}
+}
+

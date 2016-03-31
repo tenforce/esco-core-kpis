@@ -1,0 +1,184 @@
+## COUNT_CONCEPTS ##
+### Description : Get count of mappable concepts in a taxonomy ###
+### Parameters :  taxonomySource ###
+<http://mu.semte.ch/vocabularies/kpis/36504aa4-c2b2-4b1b-b99d-3563f0b61590> a <http://mu.semte.ch/vocabularies/kpis/KPI> ;
+    <http://mu.semte.ch/vocabularies/core/uuid> "36504aa4-c2b2-4b1b-b99d-3563f0b61590" ;
+    <http://mu.semte.ch/vocabularies/kpis/query> """SELECT COUNT(DISTINCT (?concept)) AS ?total
+                  WHERE
+                  {
+                  	?concept skos:inScheme ?taxUri .
+                  	?concept <http://sem.tenforce.com/vocabularies/mapping-platform/isMappable> 'true' .
+                  	?taxUri <http://mu.semte.ch/vocabularies/core/uuid> '#taxonomySource' .
+                  }""";
+    <http://purl.org/dc/terms/title> "Get count mappable concepts" ;
+    <http://mu.semte.ch/vocabularies/kpis/lastCalculated> "1459421479378" ;
+    <http://mu.semte.ch/vocabularies/kpis/multiValue> 'false' .
+
+## COUNT_UNMAPPED_CONCEPTS ##
+### Description : Get count of concepts in a specific taxonomy and being the source or the destination of a mapping ###
+### Parameters :  taxonomySource - from ###
+<http://mu.semte.ch/vocabularies/kpis/a641084c-347b-4d38-bf21-61cc8d67baa8> a <http://mu.semte.ch/vocabularies/kpis/KPI> ;
+    <http://mu.semte.ch/vocabularies/core/uuid> "a641084c-347b-4d38-bf21-61cc8d67baa8" ;
+    <http://mu.semte.ch/vocabularies/kpis/query> """SELECT  COUNT(DISTINCT (?concept)) AS ?total
+                  WHERE
+                  {
+                  	?concept skos:inScheme ?taxUri .
+                  	?concept <http://sem.tenforce.com/vocabularies/mapping-platform/isMappable> 'true' .
+                  	?taxUri <http://mu.semte.ch/vocabularies/core/uuid> '#taxonomySource' .
+                  	FILTER NOT EXISTS{
+                  		?mapping a <http://sem.tenforce.com/vocabularies/mapping-platform/Mapping> .
+                  		?mapping <http://sem.tenforce.com/vocabularies/mapping-platform/#from> ?concept .
+                  		?mapping <http://sem.tenforce.com/vocabularies/mapping-platform/status> ?status .
+                  		FILTER(?status != 'suggested' && ?status != 'rejected' && ?status != 'removed')
+                  	}
+                  }""";
+    <http://purl.org/dc/terms/title> "Get count unmapped mappable concepts" ;
+    <http://mu.semte.ch/vocabularies/kpis/lastCalculated> "1459421479378" ;
+    <http://mu.semte.ch/vocabularies/kpis/multiValue> 'false' .
+
+
+## COUNT_MAPPED_CONCEPTS ##
+### Description : Get count of concepts in a specific taxonomy and being the source or the destination of a mapping ###
+### Parameters :  taxonomySource - from ###
+<http://mu.semte.ch/vocabularies/kpis/e9f1cc43-5a4e-43b3-a41e-3f369182a140> a <http://mu.semte.ch/vocabularies/kpis/KPI> ;
+    <http://mu.semte.ch/vocabularies/core/uuid> "e9f1cc43-5a4e-43b3-a41e-3f369182a140" ;
+    <http://mu.semte.ch/vocabularies/kpis/query> """SELECT  COUNT(DISTINCT (?concept)) AS ?total
+                  WHERE
+                  {
+                  	?concept skos:inScheme ?taxUri .
+                  	?concept <http://sem.tenforce.com/vocabularies/mapping-platform/isMappable> 'true' .
+                  	?taxUri <http://mu.semte.ch/vocabularies/core/uuid> '#taxonomySource' .
+                  	FILTER EXISTS{
+                  		?mapping a <http://sem.tenforce.com/vocabularies/mapping-platform/Mapping> .
+                  		?mapping <http://sem.tenforce.com/vocabularies/mapping-platform/#from> ?concept .
+                  		?mapping <http://sem.tenforce.com/vocabularies/mapping-platform/status> ?status .
+                  		FILTER(?status != 'suggested' && ?status != 'rejected' && ?status != 'removed')
+                  	}
+                  }""";
+    <http://purl.org/dc/terms/title> "Get count mapped mappable concepts" ;
+    <http://mu.semte.ch/vocabularies/kpis/lastCalculated> "1459421479378" ;
+    <http://mu.semte.ch/vocabularies/kpis/multiValue> 'false' .
+
+
+## COUNT_CONCEPTS_STATUS ##
+### Descr : Get count of concepts from one taxonomy to the other according to status ###
+### Parameters :  taxonomySource, taxonomyTarget, Status ###
+<http://mu.semte.ch/vocabularies/kpis/74328a44-d2c8-4d36-a300-e72bb1d6cde6> a <http://mu.semte.ch/vocabularies/kpis/KPI> ;
+    <http://mu.semte.ch/vocabularies/core/uuid> "74328a44-d2c8-4d36-a300-e72bb1d6cde6" ;
+    <http://mu.semte.ch/vocabularies/kpis/query> """SELECT  COUNT(DISTINCT (?concept)) AS ?total
+                  WHERE
+                  {
+                  	?concept skos:inScheme ?taxonomySource .
+                  	?taxonomySource <http://mu.semte.ch/vocabularies/core/uuid> '#taxonomySource' .
+                  	?status <http://sem.tenforce.com/vocabularies/mapping-platform/statusForConcept> ?concept .
+                  	?status <http://sem.tenforce.com/vocabularies/mapping-platform/statusForTaxonomyTo> ?taxonomyTarget .
+                  	?status <http://sem.tenforce.com/vocabularies/mapping-platform/statusForTaxonomyFrom> ?taxonomySource .
+                  	?taxonomyTarget <http://mu.semte.ch/vocabularies/core/uuid> '#taxonomyTarget' .
+                  	?status <http://sem.tenforce.com/vocabularies/mapping-platform/status> '#status' .
+                  }""";
+    <http://purl.org/dc/terms/title> "Get count concepts with certain status" ;
+    <http://mu.semte.ch/vocabularies/kpis/lastCalculated> "1459421479378" ;
+    <http://mu.semte.ch/vocabularies/kpis/multiValue> 'false' .
+
+
+## COUNT_CONCEPTS_STATUS ##
+### Descr : Get count of concepts from one taxonomy to the other###
+### Parameters :  taxonomySource, taxonomyTarget, Status ###
+<http://mu.semte.ch/vocabularies/kpis/74328a44-d2c8-4d36-a300-e72bb1d6cde6> a <http://mu.semte.ch/vocabularies/kpis/KPI> ;
+    <http://mu.semte.ch/vocabularies/core/uuid> "74328a44-d2c8-4d36-a300-e72bb1d6cde6" ;
+    <http://mu.semte.ch/vocabularies/kpis/query> """SELECT  COUNT(DISTINCT (?concept)) AS ?total
+                  WHERE
+                  {
+                  	?concept skos:inScheme ?taxonomySource .
+                  	?taxonomySource <http://mu.semte.ch/vocabularies/core/uuid> '#taxonomySource' .
+                  	?status <http://sem.tenforce.com/vocabularies/mapping-platform/statusForConcept> ?concept .
+                  	?status <http://sem.tenforce.com/vocabularies/mapping-platform/statusForTaxonomyTo> ?taxonomyTarget .
+                  	?status <http://sem.tenforce.com/vocabularies/mapping-platform/statusForTaxonomyFrom> ?taxonomySource .
+                  	?taxonomyTarget <http://mu.semte.ch/vocabularies/core/uuid> '#taxonomyTarget' .
+                  	?status <http://sem.tenforce.com/vocabularies/mapping-platform/status> '#status' .
+                  }""";
+    <http://purl.org/dc/terms/title> "Get count concepts with certain status" ;
+    <http://mu.semte.ch/vocabularies/kpis/lastCalculated> "1459421479378" ;
+    <http://mu.semte.ch/vocabularies/kpis/multiValue> 'false' .
+
+
+## COUNTS_CONCEPTS_MATCHTYPE ##
+### Description : Get counts of concepts in a specific taxonomy to another one, for each matchType ###
+### Parameters :  taxonomySource, taxonomyTarget ###
+<http://mu.semte.ch/vocabularies/kpis/85aa77f0-f0ad-4cb9-8801-fca9945908aa> a <http://mu.semte.ch/vocabularies/kpis/KPI> ;
+    <http://mu.semte.ch/vocabularies/core/uuid> "85aa77f0-f0ad-4cb9-8801-fca9945908aa" ;
+    <http://mu.semte.ch/vocabularies/kpis/query> """SELECT ?matchType COUNT(?matchType) AS ?total
+                   WHERE
+                   {
+                    ?conceptFrom skos:inScheme ?taxUriFrom .
+                    ?conceptFrom <http://sem.tenforce.com/vocabularies/mapping-platform/isMappable> 'true' .
+                    ?taxUriFrom <http://mu.semte.ch/vocabularies/core/uuid> '#taxonomySource' .
+
+                    ?conceptTo skos:inScheme ?taxUriTo .
+                    ?conceptTo <http://sem.tenforce.com/vocabularies/mapping-platform/isMappable> 'true' .
+                    ?taxUriTo <http://mu.semte.ch/vocabularies/core/uuid> '#taxonomyTarget' .
+
+                    ?mapping a <http://sem.tenforce.com/vocabularies/mapping-platform/Mapping> .
+                    ?mapping <http://sem.tenforce.com/vocabularies/mapping-platform/mapsFrom> ?conceptFrom .
+                    ?mapping <http://sem.tenforce.com/vocabularies/mapping-platform/mapsTo> ?conceptTo .
+                    ?mapping <http://sem.tenforce.com/vocabularies/mapping-platform/matchType> ?matchType .
+                    ?mapping <http://sem.tenforce.com/vocabularies/mapping-platform/status> ?status .
+                    FILTER(?status != 'suggested' && ?status != 'rejected' && ?status != 'removed')
+                   } GROUP BY ?matchType
+                   """;
+    <http://purl.org/dc/terms/title> "Get count of mapped concepts between taxonomies depending on their type of mapping" ;
+    <http://mu.semte.ch/vocabularies/kpis/lastCalculated> "1459421479378" ;
+    <http://mu.semte.ch/vocabularies/kpis/multiValue> 'true' .
+
+
+## COUNT_MAPPINGS ##
+### Description : Get count of mappings from a specific taxonomy to another one ###
+### Parameters :  taxonomySource, taxonomyTarget ###
+<http://mu.semte.ch/vocabularies/kpis/09279ee0-ebb6-40b5-b777-3bb0650cb6f4> a <http://mu.semte.ch/vocabularies/kpis/KPI> ;
+    <http://mu.semte.ch/vocabularies/core/uuid> "09279ee0-ebb6-40b5-b777-3bb0650cb6f4" ;
+    <http://mu.semte.ch/vocabularies/kpis/query> """SELECT COUNT(?mapping) AS ?total
+                   WHERE
+                   {
+                    ?conceptFrom skos:inScheme ?taxUriFrom .
+                    ?conceptFrom <http://sem.tenforce.com/vocabularies/mapping-platform/isMappable> 'true' .
+                    ?taxUriFrom <http://mu.semte.ch/vocabularies/core/uuid> '#taxonomySource' .
+
+                    ?conceptTo skos:inScheme ?taxUriTo .
+                    ?conceptTo <http://sem.tenforce.com/vocabularies/mapping-platform/isMappable> 'true' .
+                    ?taxUriTo <http://mu.semte.ch/vocabularies/core/uuid> '#taxonomyTarget' .
+
+                    ?mapping a <http://sem.tenforce.com/vocabularies/mapping-platform/Mapping> .
+                    ?mapping <http://sem.tenforce.com/vocabularies/mapping-platform/mapsFrom> ?conceptFrom .
+                    ?mapping <http://sem.tenforce.com/vocabularies/mapping-platform/mapsTo> ?conceptTo .
+                   }
+                   """;
+    <http://purl.org/dc/terms/title> "Get count of mappings between taxonomies" ;
+    <http://mu.semte.ch/vocabularies/kpis/lastCalculated> "1459421479378" ;
+    <http://mu.semte.ch/vocabularies/kpis/multiValue> 'false' .
+
+
+## COUNT_MAPPINGS_STATUS ##
+### Description : Get count of mappings from a specific taxonomy to another one according to status ###
+### Parameters :  taxonomySource, taxonomyTarget, status ###
+<http://mu.semte.ch/vocabularies/kpis/87b7cfba-9ef2-4ca5-9ee8-a717be514573> a <http://mu.semte.ch/vocabularies/kpis/KPI> ;
+    <http://mu.semte.ch/vocabularies/core/uuid> "87b7cfba-9ef2-4ca5-9ee8-a717be514573" ;
+    <http://mu.semte.ch/vocabularies/kpis/query> """SELECT COUNT(?mapping) AS ?total
+                   WHERE
+                   {
+                    ?conceptFrom skos:inScheme ?taxUriFrom .
+                    ?conceptFrom <http://sem.tenforce.com/vocabularies/mapping-platform/isMappable> 'true' .
+                    ?taxUriFrom <http://mu.semte.ch/vocabularies/core/uuid> '#taxonomySource' .
+
+                    ?conceptTo skos:inScheme ?taxUriTo .
+                    ?conceptTo <http://sem.tenforce.com/vocabularies/mapping-platform/isMappable> 'true' .
+                    ?taxUriTo <http://mu.semte.ch/vocabularies/core/uuid> '#taxonomyTarget' .
+
+                    ?mapping a <http://sem.tenforce.com/vocabularies/mapping-platform/Mapping> .
+                    ?mapping <http://sem.tenforce.com/vocabularies/mapping-platform/mapsFrom> ?conceptFrom .
+                    ?mapping <http://sem.tenforce.com/vocabularies/mapping-platform/mapsTo> ?conceptTo .
+                    ?mapping <http://sem.tenforce.com/vocabularies/mapping-platform/status> '#status' .
+                   }
+                   """;
+    <http://purl.org/dc/terms/title> "Get count of mapped concepts between taxonomies depending on their type of mapping" ;
+    <http://mu.semte.ch/vocabularies/kpis/lastCalculated> "1459421479378" ;
+    <http://mu.semte.ch/vocabularies/kpis/multiValue> 'false' .
