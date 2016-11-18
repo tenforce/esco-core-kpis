@@ -1,4 +1,5 @@
-#require 'pry-byebug'
+require "json"
+#require "pry"
 
 # NB : ConceptStatus = "Approved", MappingStatus = "approved" #
 
@@ -8,6 +9,7 @@
 MU_KPIS = RDF::Vocabulary.new(MU.to_uri.to_s + "kpis/")
 MU_MP = RDF::Vocabulary.new(MU.to_uri.to_s + "mapping-platform/")
 DCT = RDF::Vocabulary.new("http://purl.org/dc/terms/")
+GRAPH= "http://mu.semte.ch/application"
 
 =begin
       TODO : Create a helper to get all results
@@ -19,13 +21,13 @@ DCT = RDF::Vocabulary.new("http://purl.org/dc/terms/")
 ###
 
 get '/kpis/version' do
-  { version: "0.0.2" }.to_json
+  { version: "0.0.3" }.to_json
 end
 
 get '/kpis/:id' do
   content_type 'application/vnd.api+json'
   id = params[:id]
-  res = fetch_kpi(id)
+  res = fetch_kpi(id, GRAPH)
   {
     data: {
       attributes: res,
@@ -37,37 +39,72 @@ end
 get '/kpis/:id/run' do
   content_type 'application/vnd.api+json'
   id = params[:id]
-  kpi = fetch_kpi(id)
+  kpi = fetch_kpi(id, GRAPH)
+  uri = kpi["uri"]
+  kpi.delete('uri')
 
-  res = run_kpi(kpi, params)
-  if kpi["multiValue"] == "false"
-    ret = {
-      data:{
-        attributes: res,
-        links:{self: id}
-      }
-    }
-  else
-    l = []
-    for index in 0 ... res.size
-      l[index] = {
-        type: "observation",
-        attributes: res[index],
-        self: "#{id}/observation/#{index}"
-      }
+  # Checking if bypass cache parameter is present
+  if !params[:bypassCache] || params[:bypassCache] == "false"
+    # First check if there is any persisted result for that specific params
+    cached = fetch_cached(id, params, GRAPH)
+    if cached
+      if (Time.now().to_i - cached["lastCalculated"].to_i) > (1000*3600*24) || !cached["results"]
+        # recalculate
+        recalculate = true
+      else
+        # cached is a single result, should never be an array
+        res = JSON.parse(cached["results"])
+        kpi["lastCalculated"] = cached["lastCalculated"].to_i
+      end
+    else
+      recalculate = true
     end
-    ret = {
-      data:{
-        attributes: kpi,
-        self: id,
-        relationships: {
-          observations: {
-            data:l
-          }
+    # Then check if the lastCalculated is not too old
+  else
+    recalculate = true
+  end
+
+
+  if recalculate
+    # Do the query again
+    res = run_kpi(kpi, params)
+    time = Time.now().to_i
+    save_results(id, params, res, time, GRAPH)
+    kpi["lastCalculated"] = time
+  end
+
+  # res can either be an array of results or a single result
+  if res.is_a?(Array)
+    array = res
+  else
+    array = []
+    array[0] = res
+  end
+
+  l = []
+  for index in 0 ... array.size
+    l[index] = {
+      type: "observation",
+      attributes: array[index],
+      links:{self: "#{uri}/observation/#{index}"}
+    }
+  end
+  if recalculate
+    kpi["isCachedResult"] = false
+  else
+    kpi["isCachedResult"] = true
+  end
+  ret = {
+    data:{
+      attributes: kpi,
+      links:{self: uri},
+      relationships: {
+        observations: {
+          data:l
         }
       }
     }
-  end
+  }
   ret.to_json
 
 end
@@ -81,16 +118,7 @@ helpers do
   def run_kpi(kpi, params)
     newquery = replace_params(kpi["query"], params)
     res = query(newquery)
-    puts "Query : "+newquery.to_s
-    ret = nil
-    if kpi["multiValue"] == "false"
-      puts "singleValue"
-      ret = first_result res
-    else
-      puts "multiValue"
-      ret = all_results res
-    end
-    ret
+    all_results res
   end
 
   def replace_params(query, params)
@@ -106,16 +134,88 @@ helpers do
     query
   end
 
-  def fetch_kpi (id)
-    first_result query "SELECT ?label ?multiValue ?query WHERE {
-      ?kpi <#{MU_CORE.uuid}> '#{id}';
+  def fetch_kpi (id, graph)
+    first_result query "SELECT ?uri ?label ?query
+      FROM <#{graph}>
+      WHERE {
+      ?uri <#{MU_CORE.uuid}> '#{id}';
            <#{MU_KPIS.query}> ?query .
 
       OPTIONAL {
-        ?kpi <#{DCT.title}> ?label .
-        ?kpi <#{MU_KPIS.multiValue}> ?multiValue .
+        ?uri <#{DCT.title}> ?label .
       }
     }"
+  end
+
+  def build_parameters_query (params, varname="cached")
+    parameters =""
+    params.each do | key, value |
+      if key.is_a?(String) && value.is_a?(String)
+        key = escape_string_parameter(key)
+        value = escape_string_parameter(value)
+        if key.start_with?("kpi-")
+          parameters += "?#{varname} <#{MU_KPIS.parameter}-#{key}> '#{value}' ."
+        end
+      end
+    end
+    parameters
+  end
+
+  def save_results (id, params, results, time, graph)
+    parameters1 = build_parameters_query(params, "tmpcached")
+    parameters2 = build_parameters_query(params, "cached")
+
+    squery =  "WITH <#{graph}>
+      DELETE
+      {
+        ?tmpcached <#{MU_KPIS.lastCalculated}> ?lastCalculated .
+        ?tmpcached <#{MU_KPIS.results}> ?results .
+      }
+      INSERT
+      {
+        ?cached <#{MU_KPIS.isCacheFor}> ?uri .
+        ?cached <#{MU_KPIS.lastCalculated}> #{time} .
+        ?cached <#{MU_KPIS.results}> '#{results.to_json}' .
+        #{parameters2}
+      }
+      WHERE
+      {
+        ?uri <#{MU_CORE.uuid}> '#{id}'.
+        OPTIONAL { ?tmpcached <#{MU_KPIS.isCacheFor}> ?uri .
+        #{parameters1}
+        }
+        BIND(IF(BOUND(?tmpcached), ?tmpcached, URI(CONCAT('#{MU_KPIS.cache}-', STRUUID()))) as ?cached)
+        OPTIONAL
+        {
+        ?cached <#{MU_KPIS.lastCalculated}> ?lastCalculated .
+        }
+        OPTIONAL
+        {
+        ?cached <#{MU_KPIS.results}> ?results .
+        }
+      }"
+    update squery
+  end
+
+  def fetch_cached (id, params, graph)
+    parameters = build_parameters_query(params)
+
+    first_result query "SELECT ?lastCalculated ?results
+      FROM <#{graph}>
+      WHERE
+      {
+        ?uri <#{MU_CORE.uuid}> '#{id}'.
+        ?cached <#{MU_KPIS.isCacheFor}> ?uri .
+        #{parameters}
+        OPTIONAL
+        {
+        ?cached <#{MU_KPIS.lastCalculated}> ?lastCalculated .
+        }
+        OPTIONAL
+        {
+        ?cached <#{MU_KPIS.results}> ?results .
+        }
+      }"
   end
 
   ###
@@ -153,8 +253,8 @@ helpers do
   end
 
   def escape_string_parameter (parameter)
-    newparameter = parameter.gsub /["']/, '\"'
-    newparameter
+    parameter.gsub /["']/, '\"'
   end
 
 end
+
