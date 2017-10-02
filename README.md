@@ -1,4 +1,4 @@
-# mu-r-kpis
+# esco-core-kpis
 
 This project allows users to perform kpi calls and get the results as json-api
 
