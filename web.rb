@@ -39,7 +39,13 @@ end
 get '/kpis/:id/run' do
   content_type 'application/vnd.api+json'
   id = params[:id]
+  unless id
+    error("No ID was provided.")
+  end
   kpi = fetch_kpi(id, GRAPH)
+  unless kpi
+    error("This KPI does not exist.", 404)
+  end
   uri = kpi["uri"]
   kpi.delete('uri')
 
